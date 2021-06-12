@@ -14,86 +14,85 @@ for i in range(42):
 
 
 def alpha_beta_decision(board, turn, ai_level, queue, max_player):
-    if board.grid[3][0] == 1 and turn == 2:
-        queue.put(2)
+    # random move (to modify)
+    # queue.put(board.get_possible_moves()[rnd.randint(0, len(board.get_possible_moves()) - 1)])
     possible_moves = board.get_possible_moves()
     best_move = possible_moves[0]
-    best_value = -math.inf
+    best_value = 0
     alpha = -math.inf
     beta = math.inf
     for move in possible_moves:
         updated_board = board.copy()
-        updated_board.add_disk(move, max_player, update_display=False)
-        value = min_value_ab(updated_board, turn + 1, ai_level - 1, alpha, beta)
+        updated_board.add_disk( move, turn % 2 + 1,False)
+        value = min_value_ab(updated_board, turn + 1, alpha, beta,ai_level-1)
         if value > best_value:
             best_value = value
             best_move = move
     queue.put(best_move)
 
-
-def max_value_ab(board, turn, ai_level, alpha, beta):
-    if board.check_victory() or turn > 42 or ai_level == 0:
-        return -math.inf
+def max_value_ab(board, turn, alpha, beta, ai_level):
+    if board.check_victory():
+        return -1
+    if turn > ai_level:
+        return  board.eval(turn % 2 + 1)
     possible_moves = board.get_possible_moves()
     value = -math.inf
+
     for move in possible_moves:
         updated_board = board.copy()
-        updated_board.add_disk(move, 2 - turn % 2, update_display=False)
-        if board.check_victory():
-            return -math.inf
-        value = max(value, min_value_ab(updated_board, turn + 1, ai_level - 1, alpha, beta))
+        updated_board.add_disk(move,turn % 2 + 1,False)
+        value = max(value, min_value_ab(updated_board, turn + 1, alpha, beta,ai_level-1))
         if value >= beta:
-            return updated_board.eval(2 - turn % 2)
+            return value
         alpha = max(alpha, value)
     return value
 
-
-def min_value_ab(board, turn, ai_level, alpha, beta):
-    if board.check_victory() or turn > 42 or ai_level == 0:
-        return math.inf
+def min_value_ab(board, turn, alpha, beta, ai_level):
+    if board.check_victory():
+        return 1
+    if turn >  ai_level:
+        return -board.eval(turn % 2 + 1)
     possible_moves = board.get_possible_moves()
     value = math.inf
     for move in possible_moves:
         updated_board = board.copy()
-        updated_board.add_disk(move, 2 - turn % 2, update_display=False)
-        if board.check_victory():
-            return math.inf
-        value = min(value, max_value_ab(updated_board, turn + 1, ai_level - 1, alpha, beta))
+
+        updated_board.add_disk( move, turn % 2 + 1,False)
+        value = min(value, max_value_ab(updated_board, turn + 1, alpha, beta,ai_level-1))
         if value <= alpha:
-            return -updated_board.eval(2 - turn % 2)
+            return value
         beta = min(beta, value)
     return value
-
 
 class Board:
     grid = np.array([[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],
                      [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]])
 
     def check_n(self, n):
+        score = 0
         for line in range(6):
             for horizontal_shift in range(n):
                 if self.grid[horizontal_shift][line] == self.grid[horizontal_shift + 1][line] == \
                         self.grid[horizontal_shift + 2][line] == self.grid[horizontal_shift + 3][line] != 0:
-                    return n ** n
+                    return n
         # Vertical alignment check
-        for column in range(7):
+        for column in range(6):
             for vertical_shift in range(n - 1):
                 if self.grid[column][vertical_shift] == self.grid[column][vertical_shift + 1] == \
                         self.grid[column][vertical_shift + 2] == self.grid[column][vertical_shift + 3] != 0:
-                    return n ** n
+                    return n
         # Diagonal alignment check
         for horizontal_shift in range(n):
             for vertical_shift in range(n - 1):
                 if self.grid[horizontal_shift][vertical_shift] == self.grid[horizontal_shift + 1][vertical_shift + 1] == \
-                        self.grid[horizontal_shift + 2][vertical_shift + 2] == self.grid[horizontal_shift + 3][
-                    vertical_shift + 3] != 0:
-                    return n ** n
+                        self.grid[horizontal_shift + 2][vertical_shift + 2] == self.grid[horizontal_shift + 3][vertical_shift + 3] != 0:
+                    return n
                 elif self.grid[horizontal_shift][5 - vertical_shift] == self.grid[horizontal_shift + 1][
                     4 - vertical_shift] == \
                         self.grid[horizontal_shift + 2][3 - vertical_shift] == self.grid[horizontal_shift + 3][
                     2 - vertical_shift] != 0:
-                    return n ** n
-        return 0
+                    return n
+        return score
 
     def eval(self, player):
         heuristic = 0
